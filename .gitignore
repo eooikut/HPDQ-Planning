@@ -1,3 +1,5 @@
 .env
+
 uploads/
+
 flask_cache_data/

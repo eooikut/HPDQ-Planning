@@ -1,0 +1,2 @@
+✅ Đã lưu tạm file chi tiết SO HRC1: HRC2_-_FILE_THEO_DÕI_ĐƠN_HÀNG.xlsx
+❌ Lỗi khi xử lý file chi tiết SO: 'SO Mapping'

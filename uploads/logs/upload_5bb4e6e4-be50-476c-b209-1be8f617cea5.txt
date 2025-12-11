@@ -1,0 +1,2 @@
+✅ Đã lưu tạm file chi tiết SO: LỊCH_TÀU_+_LXH_2025_(+2024)_(3).xlsx
+❌ Lỗi khi xử lý file chi tiết SO: Không tìm thấy cột 'SO Mapping' hoặc các biến thể của nó trong file Excel. Vui lòng kiểm tra lại tên cột.

@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Công cụ Tính toán Sản xuất{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="text-primary border-bottom pb-2">
+                <i class="fas fa-calculator me-2"></i>Công cụ Cân bằng Sản xuất
+            </h4>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <ul class="nav nav-tabs card-header-tabs" id="inputTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-pane" type="button">
+                        <i class="fas fa-keyboard me-1 text-primary"></i> Nhập thủ công
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button">
+                        <i class="fas fa-file-excel me-1 text-success"></i> Upload Excel
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body">
+            <div class="tab-content">
+                
+                <div class="tab-pane fade" id="upload-pane">
+                    <form method="POST" enctype="multipart/form-data" class="row align-items-end g-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Chọn file Excel (.xlsx)</label>
+                            <input class="form-control" type="file" name="file" accept=".xlsx, .xls">
+                            <div class="form-text text-muted small">
+                                <i class="fas fa-info-circle"></i> File cần có 3 cột: <b>Khổ rộng</b>, <b>Chiều dày</b>, <b>Khối lượng</b>.
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-play me-1"></i> Tính toán
+                            </button>
+                            <a href="{{ request.path }}" class="btn btn-light border ms-2" title="Xóa hết làm lại">
+                                <i class="fas fa-sync-alt text-muted"></i> Làm mới
+                            </a>
+                            <a href="{{ url_for('static', filename='template_tinh_san_xuat.xlsx') }}" class="btn btn-outline-secondary ms-auto btn-sm d-flex align-items-center">
+                                <i class="fas fa-download me-1"></i> File mẫu
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade show active" id="manual-pane">
+                    <form method="POST" id="manualForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="table-responsive mb-3" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-bordered table-sm text-center align-middle header-fixed">
+                                <thead class="table-secondary position-sticky top-0">
+                                    <tr>
+                                        <th style="width: 30%">Khổ rộng (mm)</th>
+                                        <th style="width: 30%">Chiều dày (mm)</th>
+                                        <th style="width: 30%">Khối lượng (Tấn)</th>
+                                        <th style="width: 10%">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody">
+                                    {% set widths = request.form.getlist('manual_width') %}
+                                    {% set thicks = request.form.getlist('manual_thick') %}
+                                    {% set masses = request.form.getlist('manual_mass') %}
+                                    
+                                    {% if widths %}
+                                        {# Nếu form đã submit, hiển thị lại dữ liệu cũ #}
+                                        {% for i in range(widths|length) %}
+                                        <tr>
+                                            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_width" value="{{ widths[i] }}" required></td>
+                                            <td><input type="number" step="0.01" class="form-control form-control-sm border-0" name="manual_thick" value="{{ thicks[i] }}" required></td>
+                                            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_mass" value="{{ masses[i] }}" required></td>
+                                            <td><button type="button" class="btn btn-sm text-danger" onclick="removeRow(this)"><i class="fas fa-times"></i></button></td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        {# Dòng mặc định #}
+                                        <tr>
+                                            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_width" required placeholder="VD: 1219"></td>
+                                            <td><input type="number" step="0.01" class="form-control form-control-sm border-0" name="manual_thick" required placeholder="VD: 1.6"></td>
+                                            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_mass" required placeholder="VD: 5000"></td>
+                                            <td><button type="button" class="btn btn-sm text-danger" onclick="removeRow(this)"><i class="fas fa-times"></i></button></td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-light border btn-sm text-primary" onclick="addRow()">
+                                <i class="fas fa-plus-circle me-1"></i> Thêm dòng
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-light border me-2" onclick="resetManualInput()">
+                                    <i class="fas fa-sync-alt text-muted"></i> Làm mới
+                                </button>
+                                <button type="submit" class="btn btn-success px-4">
+                                    <i class="fas fa-calculator me-1"></i> Calculator/Enter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-section">
+        {% if results %}
+        
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="mb-1 text-muted small text-uppercase fw-bold">Tổng Đơn Hàng</p>
+                        <h5 class="mb-0 text-dark fw-bold">
+                            {{ "{:,.0f}".format(results | sum(attribute='Đơn hàng nhập vào')) | replace(',', '.') }} <small class="fs-6 fw-normal text-muted">Tấn</small>
+                        </h5>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                        <i class="fas fa-box-open fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="p-3 bg-white border border-success rounded-3 shadow-sm d-flex align-items-center justify-content-between position-relative overflow-hidden">
+                    <div class="position-absolute start-0 top-0 h-100 bg-success" style="width: 5px;"></div>
+                    <div>
+                        <p class="mb-1 text-success small text-uppercase fw-bold">Tổng Chốt Sản Xuất</p>
+                        <h4 class="mb-0 text-success fw-bold">
+                            {{ "{:,.0f}".format(results | sum(attribute='Chốt (Sản xuất)')) | replace(',', '.') }} <small class="fs-6 fw-normal">Tấn</small>
+                        </h4>
+                    </div>
+                    <div class="bg-success text-white rounded-circle p-3 shadow">
+                        <i class="fas fa-check fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                {% set total_demand = results | sum(attribute='Đơn hàng nhập vào') %}
+                {% set total_prod = results | sum(attribute='Chốt (Sản xuất)') %}
+                {% set diff = total_prod - total_demand %}
+                <div class="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="mb-1 text-muted small text-uppercase fw-bold">Chênh lệch (Dư)</p>
+                        <h5 class="mb-0 {{ 'text-danger' if diff > 0 else 'text-muted' }} fw-bold">
+                            +{{ "{:,.0f}".format(diff) | replace(',', '.') }} <small class="fs-6 fw-normal">Tấn</small>
+                        </h5>
+                    </div>
+                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-3">
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2"></i>Chi tiết Phân bổ Sản xuất</h6>
+                <span class="badge bg-white text-primary">Đã xong</span>
+            </div>
+            
+            <div class="card-body p-0">
+               <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+    <table class="table table-hover mb-0 text-center align-middle">
+        <thead class="table-light position-sticky top-0" style="z-index: 10;">
+            <tr>
+                <th class="py-3">Khổ rộng</th>
+                <th class="py-3">Độ dày (SX)</th>
+                <th class="py-3 text-primary bg-primary bg-opacity-10">Input (Tấn)</th>
+                <th class="py-3 text-success fw-bold border-start border-end">Output (Tấn)</th>
+                
+                <th class="py-3 text-dark bg-warning bg-opacity-10" style="min-width: 220px;">
+                    Chi tiết Dự kiến Phụ thu <br>
+                    <small class="fw-normal text-muted">(Độ dày - Tấn - Giá - Tổng tiền)</small>
+                </th>
+                
+                <th class="py-3 text-dark fw-bold bg-warning bg-opacity-25">Tổng Dự kiến Phụ thu</th>
+                <th class="py-3">Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in results %}
+            <tr>
+                <td class="fw-bold text-dark">{{ row['Khổ rộng'] }}</td>
+                <td class="text-secondary">{{ row['Độ dày'] }}</td>
+                
+                <td class="fw-bold text-primary bg-primary bg-opacity-10">
+                    {{ "{:,.0f}".format(row['Đơn hàng nhập vào']).replace(',', '.') }}
+                </td>
+                
+                <td class="fw-bold text-success border-start border-end">
+                    {{ "{:,.0f}".format(row['Chốt (Sản xuất)']).replace(',', '.') }}
+                </td>
+
+                <td class="text-dark bg-warning bg-opacity-10 text-start ps-2 py-2" style="max-width: 250px;">
+    {% if row['Phụ thu (Chi tiết)'] %}
+        <div class="font-monospace small border rounded bg-white p-2" 
+             style="max-height: 80px; overflow-y: auto; font-size: 0.8rem; line-height: 1.5;">
+            {{ row['Phụ thu (Chi tiết)'] | safe }}
+        </div>
+    {% else %}
+        <div class="text-center text-muted small">-</div>
+    {% endif %}
+</td>
+
+                <td class="fw-bold text-dark bg-warning bg-opacity-25">
+                    {% if row['Phụ thu (Thành tiền)'] > 0 %}
+                        ${{ "{:,.0f}".format(row['Phụ thu (Thành tiền)']).replace(',', '.') }}
+                    {% else %}
+                        <span class="text-muted small">-</span>
+                    {% endif %}
+                </td>
+
+                <td class="fw-bold small">
+                    {% if row['Trạng thái'] %}
+                        <span class="text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> {{ row['Trạng thái'] }}
+                        </span>
+                    {% else %}
+                        <span class="text-success"><i class="fas fa-check"></i> Đủ cơ cấu</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+            </div>
+            <div class="card-footer bg-light text-end py-2">
+                <small class="text-muted fst-italic">Kết quả được tính toán dựa trên cấu hình tỷ lệ % hệ thống.</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // 1. Thêm dòng mới cho bảng nhập tay
+    function addRow() {
+        const table = document.getElementById('tableBody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_width" required></td>
+            <td><input type="number" step="0.01" class="form-control form-control-sm border-0" name="manual_thick" required></td>
+            <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_mass" required></td>
+            <td><button type="button" class="btn btn-sm text-danger" onclick="removeRow(this)"><i class="fas fa-times"></i></button></td>
+        `;
+        table.appendChild(newRow);
+        // Auto focus vào ô đầu tiên của dòng mới
+        newRow.querySelector('input').focus();
+    }
+
+    // 2. Xóa dòng
+    function removeRow(btn) {
+        const row = btn.parentNode.parentNode;
+        const tbody = document.getElementById('tableBody');
+        if (tbody.rows.length > 1) {
+            row.remove();
+        } else {
+            // Nếu chỉ còn 1 dòng thì xóa giá trị thôi
+            row.querySelectorAll('input').forEach(input => input.value = '');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // 3. Tự động bật Tab Nhập thủ công nếu có dữ liệu gửi về (Code này vẫn giữ để đảm bảo logic khi submit form)
+        {% if request.form.getlist('manual_width') %}
+            const triggerEl = document.querySelector('#manual-tab');
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        {% endif %}
+
+        // 4. Tự động cuộn xuống phần kết quả nếu có kết quả
+        {% if results %}
+            const resultSection = document.getElementById('result-section');
+            if (resultSection) {
+                setTimeout(() => {
+                    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        {% endif %}
+    });
+
+    function resetManualInput() {
+        // 1. Xóa các dòng dữ liệu, chỉ giữ lại 1 dòng mặc định
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_width" required placeholder="1219"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm border-0" name="manual_thick" required placeholder="1.2"></td>
+                <td><input type="number" step="1" class="form-control form-control-sm border-0" name="manual_mass" required placeholder="5000"></td>
+                <td><button type="button" class="btn btn-sm text-danger" onclick="removeRow(this)"><i class="fas fa-times"></i></button></td>
+            </tr>
+        `;
+        
+        // 2. Ẩn phần kết quả (nếu đang hiện)
+        const resultSection = document.getElementById('result-section');
+        if (resultSection) {
+            resultSection.style.display = 'none';
+        }
+    }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* 2. THIẾT LẬP FONT CHUNG CHO TOÀN TRANG NÀY */
+    :root {
+        --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-mono: 'Roboto Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    /* Áp dụng font chính */
+    .container-fluid {
+        font-family: var(--font-primary) !important;
+    }
+
+    /* Làm đẹp các tiêu đề */
+    h4, h5, h6, .card-header {
+        font-weight: 600 !important;
+        letter-spacing: -0.02em; /* Thu hẹp khoảng cách chữ xíu cho hiện đại */
+    }
+
+    /* 3. TỐI ƯU HIỂN THỊ BẢNG SỐ LIỆU (QUAN TRỌNG) */
+    .table {
+        font-size: 0.95rem; /* Cỡ chữ vừa phải */
+    }
+    
+    .table td, .table th {
+        /* tabular-nums giúp các số thẳng hàng nhau theo chiều dọc */
+        font-feature-settings: "tnum"; 
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Số liệu quan trọng (Input, Output, Tiền) làm đậm và to hơn xíu */
+    .fw-bold.text-primary, 
+    .fw-bold.text-success, 
+    .fw-bold.text-dark {
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
+    }
+
+    /* 4. CHỈNH LẠI FONT MONOSPACE CHO CỘT CHI TIẾT */
+    .font-monospace {
+        font-family: var(--font-mono) !important;
+        font-size: 0.85rem !important; /* Bé lại một chút cho gọn */
+        letter-spacing: -0.03em;
+    }
+
+    /* 5. INPUT FORM ĐẸP HƠN */
+    .form-control, .btn {
+        font-family: var(--font-primary);
+        font-weight: 500;
+    }
+    
+    /* Input trong bảng nhập tay */
+    #tableBody input.form-control-sm {
+        font-family: var(--font-mono); /* Dùng font mono cho lúc nhập số */
+        font-weight: 500;
+        color: #2c3e50;
+    }
+        /* CSS Tùy chỉnh nhỏ */
+    .table-hover tbody tr:hover td {
+        background-color: #f1f8ff; /* Hiệu ứng hover dòng */
+    }
+    /* Input trong bảng nhập tay nhìn clean hơn */
+    .form-control-sm:focus {
+        background-color: #fff;
+        box-shadow: 0 0 0 2px rgba(13,110,253,.25);
+    }
+</style>
+
+{% endblock %}

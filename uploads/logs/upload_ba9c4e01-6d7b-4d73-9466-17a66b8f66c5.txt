@@ -1,0 +1,2 @@
+✅ Đã lưu tạm file chi tiết SO: HRC2_-_FILE_THEO_DÕI_ĐƠN_HÀNG_(29.08)_(4).xlsx
+❌ Lỗi khi xử lý file chi tiết SO: Không tìm thấy cột 'SO Mapping' hoặc các biến thể của nó trong file Excel. Vui lòng kiểm tra lại tên cột.

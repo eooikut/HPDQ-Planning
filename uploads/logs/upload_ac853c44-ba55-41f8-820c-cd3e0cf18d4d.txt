@@ -1,0 +1,3 @@
+✅ Đã lưu tạm file chi tiết SO: HRC2_-_FILE_THEO_DÕI_ĐƠN_HÀNG_(29.08)_(4).xlsx
+✅ Đã lưu tạm file chi tiết SO: HRC1_-_FILE_THEO_DÕI_ĐƠN_HÀNG_(04.04).xlsx
+❌ Lỗi khi xử lý file chi tiết SO: name 'all_dfs' is not defined

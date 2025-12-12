@@ -1,5 +1,8 @@
+# Ignore environment file
 .env
 
+# Ignore uploads directory
 uploads/
 
+# Ignore flask cache data directory
 flask_cache_data/
